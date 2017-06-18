@@ -1,1 +1,1 @@
-spot-on-matlab
+SpotOn
