@@ -95,7 +95,7 @@ if DoSingleCellFit == 1
             % use function "compile_histograms_single_cell.m" to compile histograms
             disp('loading in trajectories and compiling histograms...');
             %full_path = [curr_path, char(workspaces(WorkIter)), '.mat'] % full_path of workspace to be loaded
-            [JumpProb, JumpProbCDF, Min3Traj, CellLocs, CellJumps, CellFrames, TrajNumb] = compile_histograms_single_cell([curr_path, char(workspaces(WorkIter))], UseAllTraj, GapsAllowed, TimePoints, JumpsToConsider);
+            [JumpProb, JumpProbCDF, Min3Traj, CellLocs, CellJumps, CellJumps_used, CellFrames, TrajNumb] = compile_histograms_single_cell([curr_path, char(workspaces(WorkIter))], UseAllTraj, GapsAllowed, TimePoints, JumpsToConsider);
             
             
             %%%%% STEP 2: PERFORM MODEL-FITTING OF THE CURRENT CELL
@@ -110,7 +110,7 @@ if DoSingleCellFit == 1
             [model_PDF, model_CDF] = GenerateModelFitforPlot(model_params, JumpProb, JumpProbCDF, NumberOfStates);
 
             % Generate a plot title with all the relevant info
-            PlotTitle = GeneratePlotTitle(workspaces{RepIter}, NumberOfStates, model_params, Min3Traj, CellLocs, CellJumps, CellFrames, TrajNumb);
+            PlotTitle = GeneratePlotTitle(workspaces{RepIter}, NumberOfStates, model_params, Min3Traj, CellLocs, CellJumps, CellJumps_used, CellFrames, TrajNumb);
             
             % Do actual plotting
             subplot(2,4,PlotIndex);
@@ -129,7 +129,7 @@ if DoSingleCellFit == 1
                 text(0.6*MaxJumpPlotPDF, new_level+0.5*histogram_spacer, ['\Delta\tau: ', num2str(TimeGap*i), ' ms'], 'HorizontalAlignment','left', 'FontSize',9, 'FontName', 'Helvetica');
             end
             axis([0 MaxJumpPlotPDF 0 1.05*(max(JumpProb(end,:))+(size(JumpProb,1)-1)*histogram_spacer)]);
-            title(PlotTitle, 'FontSize',8, 'FontName', 'Helvetica', 'Color', 'k');
+            title(PlotTitle, 'FontSize',9, 'FontName', 'Helvetica', 'Color', 'k');
             set(gca,'YColor','w')
             ylabel('Probability', 'FontSize',9, 'FontName', 'Helvetica', 'Color', 'k');
             xlabel('jump length \mu m', 'FontSize',9, 'FontName', 'Helvetica', 'Color', 'k');
@@ -185,7 +185,7 @@ disp('===========================================================');
 disp('merging data from all cells and replicates...');
 disp('loading in trajectories and compiling histograms...'); tic;
 %%%%% STEP 1: LOAD IN MERGED DATA AND COMPILE HISTOGRAMS
-[JumpProb, JumpProbCDF, Min3Traj, TotalLocs, TotalFrames, TotalJumps, TrajNumb, DyeSurvivalProb, DyeHistVec, DyeMean] = compile_histograms_many_cells( data_struct, UseAllTraj, GapsAllowed, TimePoints, JumpsToConsider );
+[JumpProb, JumpProbCDF, Min3Traj, TotalLocs, TotalFrames, TotalJumps, TotalJumps_used, TrajNumb, DyeSurvivalProb, DyeHistVec, DyeMean] = compile_histograms_many_cells( data_struct, UseAllTraj, GapsAllowed, TimePoints, JumpsToConsider );
 toc;
 %%%%% STEP 2: PERFORM MODEL-FITTING OF THE MERGED DATA
 disp('performing model fitting of displacement histograms...'); tic;
@@ -197,14 +197,14 @@ toc;
 disp('proceeding to plotting the output of the model fitting...');
 [model_PDF, model_CDF] = GenerateModelFitforPlot(model_params, JumpProb, JumpProbCDF, NumberOfStates);
 % Generate a plot title with all the relevant info
-PlotTitle = GeneratePlotTitle(SampleName, NumberOfStates, model_params, Min3Traj, TotalLocs, TotalJumps, TotalFrames, TrajNumb);
+PlotTitle = GeneratePlotTitle(SampleName, NumberOfStates, model_params, Min3Traj, TotalLocs, TotalJumps, TotalJumps_used, TotalFrames, TrajNumb);
        
 % PLOT THE SURVIVAL PROBABILITY OF THE FLUOROPHORE
 figure('position',[800 100 300 275]); %[x y width height]
 hold on;
 plot(DyeHistVec, DyeSurvivalProb, 'ko', 'MarkerSize', 6, 'MarkerFaceColor', 'r');
 axis([1 51 0.001 1.01]);
-title(['1-CDF of trajectory lengths; mean = ', num2str(DyeMean), ' frames'], 'FontSize',8, 'FontName', 'Helvetica');
+title(['1-CDF of trajectory lengths; mean = ', num2str(DyeMean), ' frames'], 'FontSize',9, 'FontName', 'Helvetica');
 ylabel('1-CDF', 'FontSize',9, 'FontName', 'Helvetica');
 xlabel('number of frames', 'FontSize',9, 'FontName', 'Helvetica');
 set(gca,'yscale','log');
@@ -223,10 +223,10 @@ for i=1:min([12 size(residuals,1)])
     subplot(3,4,i);
     hold on;
     if ModelFit == 1
-        plot(HistVecJumps, residuals(i,:), '-', 'LineWidth', 2, 'Color', colour_element);
+        plot(HistVecJumps, residuals(i,:), '-', 'Color', colour_element, 'LineWidth', 2);
         max_x = MaxJumpPlotPDF;
     elseif ModelFit == 2
-        plot(HistVecJumpsCDF, residuals(i,:), '-', 'LineWidth', 2, 'Color', colour_element);
+        plot(HistVecJumpsCDF, residuals(i,:), '-', 'Color', colour_element, 'LineWidth', 2);
         max_x = MaxJumpPlotCDF;
     end
     plot([0 max_x], [0 0], 'k--', 'LineWidth', 1);
@@ -285,7 +285,7 @@ for i=size(JumpProb,1):-1:1
     text(0.6*MaxJumpPlotPDF, new_level+0.5*histogram_spacer, ['\Delta\tau: ', num2str(TimeGap*i), ' ms'], 'HorizontalAlignment','left', 'FontSize',9, 'FontName', 'Helvetica');
 end
 axis([0 MaxJumpPlotPDF 0 1.05*(max(JumpProb(end,:))+(size(JumpProb,1)-1)*histogram_spacer)]);
-title(PlotTitle, 'FontSize',8, 'FontName', 'Helvetica', 'Color', 'k');
+title(PlotTitle, 'FontSize',9, 'FontName', 'Helvetica', 'Color', 'k');
 set(gca,'YColor','w')
 ylabel('Probability', 'FontSize',9, 'FontName', 'Helvetica', 'Color', 'k');
 xlabel('jump length \mu m', 'FontSize',9, 'FontName', 'Helvetica', 'Color', 'k');

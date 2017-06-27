@@ -1,4 +1,4 @@
-function [ PlotTitle ] = GeneratePlotTitle(SampleName, NumberOfStates, model_params, Min3Traj, CellLocs, CellJumps, CellFrames, TrajNumb)
+function [ PlotTitle ] = GeneratePlotTitle(SampleName, NumberOfStates, model_params, Min3Traj, CellLocs, CellJumps, CellJumps_used, CellFrames, TrajNumb)
 %GeneratePlotTitle makes a title for a plot
 %   makes titles for both single-cell and merged datasets
 
@@ -36,8 +36,8 @@ end
 
 % overview of number of localizations etc. 
 localizations_overview_name = {['Total trajs: ', num2str(TrajNumb), '; trajs >=3: ', num2str(Min3Traj), '; FitType: ', fit_type];...
- ['Locs = ', num2str(CellLocs), '; Locs/Frame = ', num2str(round(CellLocs/CellFrames*1000)/1000), ...
-'; jumps: ', num2str(CellJumps), ';']};
+ ['Locs = ', num2str(CellLocs), '; Locs/Frame = ', num2str(round(CellLocs/CellFrames*1000)/1000)]; ...
+['Total 1\Delta t jumps = ', num2str(CellJumps), '; Jumps used = ', num2str(CellJumps_used)]};
 
 % now merge all the titles:
 PlotTitle = [main_name; model_specific_name; localizations_overview_name;];

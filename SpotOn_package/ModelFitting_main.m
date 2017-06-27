@@ -40,7 +40,7 @@ elseif NumberOfStates == 3 && FitLocError == 1 % 3-state model, Loc Error from f
 end
 
 %%%%% Initial parameters for the model-fitting
-diff = UB - LB; %difference: used for initial parameters guess
+diff_bounds = UB - LB; %difference: used for initial parameters guess
 best_ssq2 = 5e10; %initial error
 % Options for the non-linear least squares parameter optimisation
 options = optimset('MaxIter',1000,'MaxFunEvals', 5000, 'TolFun',1e-8,'TolX',1e-8,'Display','on');
@@ -80,7 +80,7 @@ end
 %%%%%%%%%%%%%%%%% NON-LINEAR LEAST SQUARED FITTING PROCEDURE %%%%%%%%%%%%%%
 for iter=1:FitIterations
         %Guess a random set of parameters
-        parameter_guess =rand(1,length(LB)).*diff+LB; 
+        parameter_guess =rand(1,length(LB)).*diff_bounds+LB; 
 
         if NumberOfStates == 2 && FitLocError == 0 % 2-state model, fixed Loc Error
             [values, ssq2, residuals] = lsqcurvefit('Model_2State', parameter_guess, ModelHistVecJumps, FitJumpProb, LB, UB, options);

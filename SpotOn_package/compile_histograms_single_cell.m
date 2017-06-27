@@ -1,4 +1,4 @@
-function [JumpProb, JumpProbCDF, Min3Traj, CellLocs, CellJumps, CellFrames, TrajNumb] = compile_histograms_single_cell( full_path, UseAllTraj, GapsAllowed, TimePoints, JumpsToConsider )
+function [JumpProb, JumpProbCDF, Min3Traj, CellLocs, CellJumps, CellJumps_used, CellFrames, TrajNumb] = compile_histograms_single_cell( full_path, UseAllTraj, GapsAllowed, TimePoints, JumpsToConsider )
 %COMPILE_HISTOGRAMS_SINGLE_CELL Compiles histograms from a single cell
 %   Use the function for compiling histograms and other relevant info from
 %   a single cell
@@ -16,7 +16,8 @@ end
 %a localization and round it. This is not an elegant solution, but it
 %works for most reasonable particle densities:
 CellLocs = 0; % for counting the total number of localizations
-TempLastFrame = max(trackedPar(1,end).Frame);
+LastIdx = length(trackedPar);
+TempLastFrame = max(trackedPar(1,LastIdx).Frame);
 CellFrames = 100*round(TempLastFrame/100);
 for n=1:length(trackedPar)
     CellLocs = CellLocs + length(trackedPar(1,n).Frame);
@@ -28,6 +29,7 @@ TrajNumb = length(trackedPar);
 %Compile histograms for each jump length
 Min3Traj = 0; %for counting number of min3 trajectories;
 CellJumps = 0; %for counting the total number of jumps
+CellJumps_used = 0; %for counting the total number of jumps actually used
 TransFrames = TimePoints+GapsAllowed*(TimePoints-1); TransLengths = struct; 
 for i=1:TransFrames
     TransLengths(1,i).Step = []; %each iteration is a different number of timepoints
@@ -59,7 +61,8 @@ if UseAllTraj == 1 %Use all of the trajectory
             end
         end    
     end
-elseif UseAllTraj == 0 %Use only the first JumpsToConsider timepoints
+    CellJumps_used = CellJumps; % all jumps were used, so these are the same
+elseif UseAllTraj == 0 % Use only the first JumpsToConsider displacements
     for i=1:length(trackedPar)
         CurrTrajLength = size(trackedPar(i).xy,1);
         if CurrTrajLength >= 3
@@ -72,9 +75,10 @@ elseif UseAllTraj == 0 %Use only the first JumpsToConsider timepoints
         HowManyFrames = min([TimePoints-1, CurrTrajLength]);
         if CurrTrajLength > 1
             CellJumps = CellJumps + CurrTrajLength - 1; %for counting all the jumps
+            CellJumps_used = CellJumps_used + min([CurrTrajLength-1 JumpsToConsider]); %for counting all the jumps actually used
             for n=1:HowManyFrames
                 FrameToStop = min([CurrTrajLength, n+JumpsToConsider]);
-                for k=1:FrameToStop-n
+                for k=1:(FrameToStop-n)
                     %Find the current XY coordinate and frames between
                     %timepoints
                     CurrXY_points = vertcat(trackedPar(i).xy(k,:), trackedPar(i).xy(k+n,:));

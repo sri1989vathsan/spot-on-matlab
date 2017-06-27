@@ -36,11 +36,11 @@ GapsAllowed = 1; % The number of allowed gaps in the tracking
 TimePoints = 8; % How many delays to consider: N timepoints yield N-1 delays
 BinWidth = 0.010; % Bin Width for computing histogram in micrometers (only for PDF; Spot-On uses 1 nm bins for CDF)
 UseAllTraj = 0; % If UseAllTraj=1, all data from all trajectories will be used; If UseAllTraj=0, only the first X displacements will be used
-JumpsToConsider = 4; % If UseAllTraj=0, the First TimePoints-JumpsToConsider-4 displacements will be used. 
+JumpsToConsider = 4; % If UseAllTraj=0, the first 4 displacements for each dT where possible will be used. 
 MaxJumpPlotPDF = 1.05; % the cut-off for displaying the displacement histograms plots
 MaxJumpPlotCDF = 3.05; % the cut-off for displaying the displacement CDF plots
 MaxJump = 5.05; % the overall maximal displacements to consider in micrometers
-SavePlot = 1; % if SavePlot=1, key output plots will be saved to the folder "SavedPlots"
+SavePlot = 0; % if SavePlot=1, key output plots will be saved to the folder "SavedPlots"; Otherwise set SavePlot = 0;
 
 %%%%% Model Fitting Parameters:
 ModelFit = 2; %Use 1 for PDF-fitting; Use 2 for CDF-fitting
@@ -87,7 +87,7 @@ Params.D_Free_2State = D_Free_2State; Params.D_Bound_2State = D_Bound_2State; Pa
 Params.curr_dir = pwd; Params.SampleName = SampleName; Params.data_struct = data_struct;
 % add the relevant paths
 addpath(genpath([pwd, filesep, 'SpotOn_package', filesep])); 
-display('Added local Spot-On paths for Spot-on core mechanics');
+display('Added local paths for Spot-on core mechanics');
 [Output_struct] = SpotOn_core(Params);
 
 

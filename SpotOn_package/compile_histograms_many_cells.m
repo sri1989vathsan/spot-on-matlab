@@ -1,4 +1,4 @@
-function [JumpProb, JumpProbCDF, Min3Traj, TotalLocs, TotalFrames, TotalJumps, TrajNumb, DyeSurvivalProb, DyeHistVec, DyeMean] = compile_histograms_many_cells( data_struct, UseAllTraj, GapsAllowed, TimePoints, JumpsToConsider )
+function [JumpProb, JumpProbCDF, Min3Traj, TotalLocs, TotalFrames, TotalJumps, TotalJumps_used, TrajNumb, DyeSurvivalProb, DyeHistVec, DyeMean] = compile_histograms_many_cells( data_struct, UseAllTraj, GapsAllowed, TimePoints, JumpsToConsider )
 %compile_histograms_many_cells Compile histograms for many cells
 %   the input will be a structure containing the neccesary info to load in
 %   trackedPar from many single cells
@@ -37,7 +37,8 @@ for iter=1:length(data_struct)
             %Find total frames using a slightly ad-hoc way: find the last frame with
             %a localization and round it. This is not an elegant solution, but it
             %works for most reasonable particle densities:
-            TempLastFrame = max(trackedPar(1,end).Frame);
+            LastIdx = length(trackedPar);
+            TempLastFrame = max(trackedPar(1,LastIdx).Frame);
             TotalFrames = TotalFrames + 100*round(TempLastFrame/100);
         end
     end
@@ -45,6 +46,7 @@ end
 
 Min3Traj = 0; %for counting number of min3 trajectories;
 TotalJumps = 0; %for counting the total number of jumps
+TotalJumps_used = 0; %for counting the total number of jumps actually used
 TrajLengthHist = zeros(1,length(AllData));
 TrajNumb = length(AllData); % total number of trajectories
 
@@ -81,7 +83,8 @@ if UseAllTraj == 1 %Use all of the trajectory
             end
         end    
     end
-elseif UseAllTraj == 0 %Use only the first JumpsToConsider timepoints
+    TotalJumps_used = TotalJumps; % all jumps were used, so these are the same
+elseif UseAllTraj == 0 %Use only the first JumpsToConsider displacements
     for i=1:length(AllData)
         % save length of the trajectory
         TrajLengthHist(1,i) = max(AllData(i).Frame) - min(AllData(i).Frame) + 1;
@@ -96,9 +99,10 @@ elseif UseAllTraj == 0 %Use only the first JumpsToConsider timepoints
         HowManyFrames = min([TimePoints-1, CurrTrajLength]);
         if CurrTrajLength > 1
             TotalJumps = TotalJumps + CurrTrajLength - 1; %for counting all the jumps
+            TotalJumps_used = TotalJumps_used + min([CurrTrajLength-1 JumpsToConsider]); %for counting all the jumps actually used
             for n=1:HowManyFrames
                 FrameToStop = min([CurrTrajLength, n+JumpsToConsider]);
-                for k=1:FrameToStop-n
+                for k=1:(FrameToStop-n)
                     %Find the current XY coordinate and frames between
                     %timepoints
                     CurrXY_points = vertcat(AllData(i).xy(k,:), AllData(i).xy(k+n,:));
