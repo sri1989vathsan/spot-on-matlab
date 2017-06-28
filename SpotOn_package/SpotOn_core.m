@@ -7,6 +7,11 @@ function [Output_struct] = SpotOn_core(Params)
 global LocError dT HistVecJumps dZ HistVecJumpsCDF ModelFit FitLocError Z_corr_a Z_corr_b
 colour = jet; close;
 Output_struct = struct([]); % for saving outputs
+% Get current screen size:
+screen_size_vector = get(0,'ScreenSize');
+% make sure the plots do not exceed the screen size:
+plot_width = min([1200 screen_size_vector(3)]);
+plot_height = min([800 screen_size_vector(4)]);
 
 %%%%%%%%%%%%%%%%% Unpack the input structure Params: %%%%%%%%%%%%%%%%%%%%%%
 TimeGap = Params.TimeGap; 
@@ -84,7 +89,7 @@ if DoSingleCellFit == 1
             PlotIndex = PlotIndex + 1;
             if ceil(CellNumb/8) > last_integer
                 %Plot everything on a big figure:
-                figure('position',[100 100 1600 1200]); %[x y width height]
+                figure('position',[100 100 min([1600 screen_size_vector(3)]) min([1200 screen_size_vector(4)]);]); %[x y width height]
                 last_integer = ceil(CellNumb/8);
                 PlotIndex = 1;
             end
@@ -198,9 +203,9 @@ disp('proceeding to plotting the output of the model fitting...');
 [model_PDF, model_CDF] = GenerateModelFitforPlot(model_params, JumpProb, JumpProbCDF, NumberOfStates);
 % Generate a plot title with all the relevant info
 PlotTitle = GeneratePlotTitle(SampleName, NumberOfStates, model_params, Min3Traj, TotalLocs, TotalJumps, TotalJumps_used, TotalFrames, TrajNumb);
-       
+
 % PLOT THE SURVIVAL PROBABILITY OF THE FLUOROPHORE
-figure('position',[800 100 300 275]); %[x y width height]
+figure('position',[400 100 300 275]); %[x y width height]
 hold on;
 plot(DyeHistVec, DyeSurvivalProb, 'ko', 'MarkerSize', 6, 'MarkerFaceColor', 'r');
 axis([1 51 0.001 1.01]);
@@ -215,7 +220,7 @@ hold off;
 % Plot residuals for the relevant fit: 
 %   so PDF residuals for PDF-fitting
 %   or CDF residuals for CDF-fitting
-figure('position',[300 300 1200 800]); %[x y width height]
+figure('position',[300 300 plot_width plot_height]); %[x y width height]
 % find max_y for plot
 max_y = max([0.1 max(max(abs(residuals)))]); min_y = -max_y;
 for i=1:min([12 size(residuals,1)])
@@ -247,7 +252,7 @@ if SavePlot == 1
 end
 
 %PLOT CDFs of DISPLACEMENTS AND OF FIT
-figure('position',[100 100 1200 800]); %[x y width height]
+figure('position',[100 100 plot_width plot_height]); %[x y width height]
 for i=1:min([12 size(JumpProbCDF,1)])
     colour_element = colour(round(i/size(JumpProbCDF,1)*size(colour,1)),:);
     subplot(3,4,i);
