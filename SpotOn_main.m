@@ -75,6 +75,12 @@ elseif DataSet == 2 % Example DataSet 2: two replicates of Halo-hCTCF at 134 Hz
     data_struct(2).Include = [1,2,3,4,5];
     % name of merged dataset
     SampleName = 'U2OS C32 Halo-hCTCF; PA-JF646; ~134 Hz; two replicates';
+    
+elseif DataSet == 3 % MyData.mat in some folder
+    data_struct(1).path = '/Users/anderssejrhansen/Dropbox/Data/';
+    data_struct(1).workspaces = {'MyData'};
+    data_struct(1).Include = [1];
+    SampleName = 'MyData: testing';
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
