@@ -36,7 +36,7 @@ GapsAllowed = 1; % The number of allowed gaps in the tracking
 TimePoints = 8; % How many delays to consider: N timepoints yield N-1 delays
 BinWidth = 0.010; % Bin Width for computing histogram in micrometers (only for PDF; Spot-On uses 1 nm bins for CDF)
 UseAllTraj = 0; % If UseAllTraj=1, all data from all trajectories will be used; If UseAllTraj=0, only the first X displacements will be used
-JumpsToConsider = 4; % If UseAllTraj=0, the first 4 displacements for each dT where possible will be used. 
+JumpsToConsider = 4; % If UseAllTraj=0, the first JumpsToConsiders displacements for each dT where possible will be used. 
 MaxJumpPlotPDF = 1.05; % the cut-off for displaying the displacement histograms plots
 MaxJumpPlotCDF = 3.05; % the cut-off for displaying the displacement CDF plots
 MaxJump = 5.05; % the overall maximal displacements to consider in micrometers
@@ -76,11 +76,6 @@ elseif DataSet == 2 % Example DataSet 2: two replicates of Halo-hCTCF at 134 Hz
     % name of merged dataset
     SampleName = 'U2OS C32 Halo-hCTCF; PA-JF646; ~134 Hz; two replicates';
     
-elseif DataSet == 3 % MyData.mat in some folder
-    data_struct(1).path = '/Users/anderssejrhansen/Dropbox/Data/';
-    data_struct(1).workspaces = {'MyData'};
-    data_struct(1).Include = [1];
-    SampleName = 'MyData: testing';
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

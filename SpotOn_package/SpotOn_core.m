@@ -49,6 +49,11 @@ if ~exist(save_path, 'dir')
     % the directory is not there, so make it
     mkdir(save_path)
 end
+if ModelFit ~=1 
+    if ModelFit ~=2
+        error(['ModelFit variable was set to ', num2str(ModelFit), '; Please choose either =1 for PDF-fitting or =2 for CDF-fitting']);
+    end
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%% Define some additional variables %%%%%%%%%%%%%%%%%%%%%%%
