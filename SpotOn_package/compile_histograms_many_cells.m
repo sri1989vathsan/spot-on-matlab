@@ -1,4 +1,4 @@
-function [JumpProb, JumpProbCDF, Min3Traj, TotalLocs, TotalFrames, TotalJumps, TotalJumps_used, TrajNumb, DyeSurvivalProb, DyeHistVec, DyeMean] = compile_histograms_many_cells( data_struct, UseAllTraj, GapsAllowed, TimePoints, JumpsToConsider )
+function [JumpProb, JumpProbCDF, Min3Traj, TotalLocs, TotalFrames, TotalJumps, TotalJumps_used, TrajNumb, DyeSurvivalProb, DyeHistVec, DyeMean, JumpsPerdT] = compile_histograms_many_cells( data_struct, UseAllTraj, GapsAllowed, TimePoints, JumpsToConsider )
 %compile_histograms_many_cells Compile histograms for many cells
 %   the input will be a structure containing the neccesary info to load in
 %   trackedPar from many single cells
@@ -55,6 +55,9 @@ TransFrames = TimePoints+GapsAllowed*(TimePoints-1); TransLengths = struct;
 for i=1:TransFrames
     TransLengths(1,i).Step = []; %each iteration is a different number of timepoints
 end
+JumpsPerdT = zeros(TransFrames,1); % for counting how many jumps per dT
+
+% compile all of the jumps
 if UseAllTraj == 1 %Use all of the trajectory
     for i=1:length(AllData)
         % save length of the trajectory
@@ -66,11 +69,10 @@ if UseAllTraj == 1 %Use all of the trajectory
         end
         %Now loop through the trajectory. Keep in mind that there are missing
         %timepoints in the trajectory, so some gaps may be for multiple
-        %timepoints.
-        %Figure out what the max jump to consider is:
-        HowManyFrames = min(TimePoints-1, CurrTrajLength);
+        %timepoints.  
         if CurrTrajLength > 1
-            TotalJumps = TotalJumps + CurrTrajLength - 1; %for counting all the jumps
+            %Figure out what the max jump to consider is:
+            HowManyFrames = min(TimePoints-1, CurrTrajLength);
             for n=1:HowManyFrames
                 for k=1:CurrTrajLength-n
                     %Find the current XY coordinate and frames between
@@ -79,10 +81,13 @@ if UseAllTraj == 1 %Use all of the trajectory
                     CurrFrameJump = AllData(i).Frame(k+n) - AllData(i).Frame(k);
                     %Calculate the distance between the pair of points
                     TransLengths(1,CurrFrameJump).Step = horzcat(TransLengths(1,CurrFrameJump).Step, pdist(CurrXY_points));
+                    % increment the number of jumps per dT counter:
+                    JumpsPerdT(CurrFrameJump) =  JumpsPerdT(CurrFrameJump) + 1;
                 end
             end
         end    
     end
+    TotalJumps = JumpsPerdT(1,1);
     TotalJumps_used = TotalJumps; % all jumps were used, so these are the same
 elseif UseAllTraj == 0 %Use only the first JumpsToConsider displacements
     for i=1:length(AllData)
@@ -95,9 +100,9 @@ elseif UseAllTraj == 0 %Use only the first JumpsToConsider displacements
         %Loop through the trajectory. If it is a short trajectory, you need to
         %make sure that you do not overshoot. So first figure out how many
         %jumps you can consider.
-        %Figure out what the max jump to consider is:
-        HowManyFrames = min([TimePoints-1, CurrTrajLength]);
         if CurrTrajLength > 1
+            %Figure out what the max jump to consider is:
+            HowManyFrames = min([TimePoints-1, CurrTrajLength]);
             TotalJumps = TotalJumps + CurrTrajLength - 1; %for counting all the jumps
             TotalJumps_used = TotalJumps_used + min([CurrTrajLength-1 JumpsToConsider]); %for counting all the jumps actually used
             for n=1:HowManyFrames
@@ -109,6 +114,8 @@ elseif UseAllTraj == 0 %Use only the first JumpsToConsider displacements
                     CurrFrameJump = AllData(i).Frame(k+n) - AllData(i).Frame(k);
                     %Calculate the distance between the pair of points
                     TransLengths(1,CurrFrameJump).Step = horzcat(TransLengths(1,CurrFrameJump).Step, pdist(CurrXY_points));
+                    % increment the number of jumps per dT counter:
+                    JumpsPerdT(CurrFrameJump) =  JumpsPerdT(CurrFrameJump) + 1;
                 end
             end
         end  
@@ -128,6 +135,10 @@ DyeMean = mean(TrajLengthHist);
 JumpProb = zeros(TimePoints-1, length(HistVecJumps));
 JumpProbFine = zeros(TimePoints-1, length(HistVecJumpsCDF));
 for i=1:size(JumpProb,1)
+    % make sure that there are enough jumps:
+    if isempty(TransLengths(1,i).Step)
+        error(['Spot-On cannot continue: for ', num2str(i), 'dT there are no displacements and Spot-On therefore cannot calculate a displacement histogram. Please change "TimePoints" or collect more data.']);
+    end 
     JumpProb(i,:) = histc(TransLengths(1,i).Step, HistVecJumps)/length(TransLengths(1,i).Step);
     JumpProbFine(i,:) = histc(TransLengths(1,i).Step, HistVecJumpsCDF)/length(TransLengths(1,i).Step);
 end  
@@ -140,5 +151,9 @@ for i=1:size(JumpProbCDF,1)
     end
 end  
 
+% re-size JumpsPerdT
+JumpsPerdT = JumpsPerdT(1:(TimePoints-1));
+% normalize JumpsPerdT
+JumpsPerdT = JumpsPerdT./JumpsPerdT(1,1);
 end
 

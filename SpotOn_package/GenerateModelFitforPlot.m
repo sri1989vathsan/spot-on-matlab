@@ -3,7 +3,7 @@ function [model_PDF, model_CDF] = GenerateModelFitforPlot(model_params, JumpProb
 %   This function is for plotting the model output as both PDF histogram
 %   and CDF
 
-global LocError dT HistVecJumps dZ HistVecJumpsCDF ModelFit FitLocError Z_corr_a Z_corr_b
+global LocError dT HistVecJumps dZ HistVecJumpsCDF ModelFit FitLocError Z_corr_a Z_corr_b JumpsPerdT UseWeights
 Temp_ModelFit = ModelFit;
 
 %%%%%%%%%%%%%%%%%%%%%%%% GENERATE MODEL-FIT PDF %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -40,7 +40,7 @@ end
 %   Because ModelFit is a global variable, temporarily force-change it to
 %   CDF-fitting (ModelFit=2) and then change it back to whatever it was
 %   afterwards. 
-ModelFit = 2; % force-change the global variable to PDF
+ModelFit = 2; % force-change the global variable to CDF
 
 % calculate the model PDF using the input model params:
 if NumberOfStates == 2 && FitLocError == 0 % 2-state model, fixed Loc Error
@@ -56,6 +56,12 @@ elseif NumberOfStates == 3 && FitLocError == 1 % 3-state model, Loc Error from f
     model_CDF = Model_3State_fitLocError(model_params, JumpProbCDF);    
 end
 
+if UseWeights == 1
+    %Normalize CDF to get rid of weighting
+    for i=1:length(JumpsPerdT)
+        model_CDF(i,:) = model_CDF(i,:)./JumpsPerdT(i);
+    end
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 

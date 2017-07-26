@@ -4,9 +4,9 @@ function [Output_struct] = SpotOn_core(Params)
 %   function fitting
 
 % define neccesary global parameters:
-global LocError dT HistVecJumps dZ HistVecJumpsCDF ModelFit FitLocError Z_corr_a Z_corr_b
-colour = jet; close;
+global LocError dT HistVecJumps dZ HistVecJumpsCDF ModelFit FitLocError Z_corr_a Z_corr_b JumpsPerdT UseWeights
 Output_struct = struct([]); % for saving outputs
+figure1 = figure; colour = jet; close; % matlab is annoying with colormaps. So do this to avoid empty figures. 
 % Get current screen size:
 screen_size_vector = get(0,'ScreenSize');
 % make sure the plots do not exceed the screen size:
@@ -41,6 +41,8 @@ D_Bound_3State = Params.D_Bound_3State;
 curr_dir = Params.curr_dir; 
 data_struct = Params.data_struct; 
 SampleName = Params.SampleName;
+UseWeights = Params.UseWeights;
+DoPlots = Params.DoPlots;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%% If saving plots, make sure that the folder exists %%%%%%%%%%%%%
@@ -94,7 +96,7 @@ if DoSingleCellFit == 1
             PlotIndex = PlotIndex + 1;
             if ceil(CellNumb/8) > last_integer
                 %Plot everything on a big figure:
-                figure('position',[100 100 min([1600 screen_size_vector(3)]) min([1200 screen_size_vector(4)]);]); %[x y width height]
+                figure1 = figure('position',[100 100 min([1600 screen_size_vector(3)]) min([1200 screen_size_vector(4)]);]); %[x y width height]
                 last_integer = ceil(CellNumb/8);
                 PlotIndex = 1;
             end
@@ -105,7 +107,7 @@ if DoSingleCellFit == 1
             % use function "compile_histograms_single_cell.m" to compile histograms
             disp('loading in trajectories and compiling histograms...');
             %full_path = [curr_path, char(workspaces(WorkIter)), '.mat'] % full_path of workspace to be loaded
-            [JumpProb, JumpProbCDF, Min3Traj, CellLocs, CellJumps, CellJumps_used, CellFrames, TrajNumb] = compile_histograms_single_cell([curr_path, char(workspaces(WorkIter))], UseAllTraj, GapsAllowed, TimePoints, JumpsToConsider);
+            [JumpProb, JumpProbCDF, Min3Traj, CellLocs, CellJumps, CellJumps_used, CellFrames, TrajNumb, JumpsPerdT] = compile_histograms_single_cell([curr_path, char(workspaces(WorkIter))], UseAllTraj, GapsAllowed, TimePoints, JumpsToConsider);
             
             
             %%%%% STEP 2: PERFORM MODEL-FITTING OF THE CURRENT CELL
@@ -167,8 +169,10 @@ if DoSingleCellFit == 1
     end
     % save the single-cell plots:
     if SavePlot == 1
-        print([save_path, SampleName, '_SingleCell_FitType',num2str(ModelFit), 'FitLocError', num2str(FitLocError),'.pdf'], '-dpdf');
-        print([save_path, SampleName, '_SingleCell_FitType',num2str(ModelFit), 'FitLocError', num2str(FitLocError),'.eps'], '-depsc');
+        set(figure1,'Units','Inches');
+        pos = get(figure1,'Position');
+        set(figure1,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)])
+        print(figure1,[save_path, SampleName, '_SingleCell_FitType',num2str(ModelFit), 'FitLocError', num2str(FitLocError),'.pdf'],'-dpdf','-r0')
     end
     Output_struct(1).single_cell_model_params = single_cell_model_params;
     Output_struct(1).single_cell_model_PDF = single_cell_model_PDF;
@@ -195,7 +199,7 @@ disp('===========================================================');
 disp('merging data from all cells and replicates...');
 disp('loading in trajectories and compiling histograms...'); tic;
 %%%%% STEP 1: LOAD IN MERGED DATA AND COMPILE HISTOGRAMS
-[JumpProb, JumpProbCDF, Min3Traj, TotalLocs, TotalFrames, TotalJumps, TotalJumps_used, TrajNumb, DyeSurvivalProb, DyeHistVec, DyeMean] = compile_histograms_many_cells( data_struct, UseAllTraj, GapsAllowed, TimePoints, JumpsToConsider );
+[JumpProb, JumpProbCDF, Min3Traj, TotalLocs, TotalFrames, TotalJumps, TotalJumps_used, TrajNumb, DyeSurvivalProb, DyeHistVec, DyeMean, JumpsPerdT] = compile_histograms_many_cells( data_struct, UseAllTraj, GapsAllowed, TimePoints, JumpsToConsider );
 toc;
 %%%%% STEP 2: PERFORM MODEL-FITTING OF THE MERGED DATA
 disp('performing model fitting of displacement histograms...'); tic;
@@ -209,103 +213,121 @@ disp('proceeding to plotting the output of the model fitting...');
 % Generate a plot title with all the relevant info
 PlotTitle = GeneratePlotTitle(SampleName, NumberOfStates, model_params, Min3Traj, TotalLocs, TotalJumps, TotalJumps_used, TotalFrames, TrajNumb);
 
-% PLOT THE SURVIVAL PROBABILITY OF THE FLUOROPHORE
-figure('position',[400 100 300 275]); %[x y width height]
-hold on;
-plot(DyeHistVec, DyeSurvivalProb, 'ko', 'MarkerSize', 6, 'MarkerFaceColor', 'r');
-axis([1 51 0.001 1.01]);
-title(['1-CDF of trajectory lengths; mean = ', num2str(DyeMean), ' frames'], 'FontSize',9, 'FontName', 'Helvetica');
-ylabel('1-CDF', 'FontSize',9, 'FontName', 'Helvetica');
-xlabel('number of frames', 'FontSize',9, 'FontName', 'Helvetica');
-set(gca,'yscale','log');
-hold off;
 
-
-% PLOT THE RESIDUALS FROM THE FITTING
-% Plot residuals for the relevant fit: 
-%   so PDF residuals for PDF-fitting
-%   or CDF residuals for CDF-fitting
-figure('position',[300 300 plot_width plot_height]); %[x y width height]
-% find max_y for plot
-max_y = max([0.1 max(max(abs(residuals)))]); min_y = -max_y;
-for i=1:min([12 size(residuals,1)])
-    colour_element = colour(round(i/size(residuals,1)*size(colour,1)),:);
-    subplot(3,4,i);
-    hold on;
-    if ModelFit == 1
-        plot(HistVecJumps, residuals(i,:), '-', 'Color', colour_element, 'LineWidth', 2);
-        max_x = MaxJumpPlotPDF;
-    elseif ModelFit == 2
-        plot(HistVecJumpsCDF, residuals(i,:), '-', 'Color', colour_element, 'LineWidth', 2);
-        max_x = MaxJumpPlotCDF;
-    end
-    plot([0 max_x], [0 0], 'k--', 'LineWidth', 1);
+if DoPlots == 1 % proceed to plotting only if DoPlots == 1
     
-    axis([0 max_x min_y max_y]);
-    if ModelFit == 1
-        title({SampleName; ['PDF residuals for \Delta\tau: ', num2str(TimeGap*i), ' ms']}, 'FontSize',8, 'FontName', 'Helvetica', 'Color', 'k');
-    elseif ModelFit == 2
-        title({SampleName; ['CDF residuals for \Delta\tau: ', num2str(TimeGap*i), ' ms']}, 'FontSize',8, 'FontName', 'Helvetica', 'Color', 'k');
-    end
-    ylabel('residuals', 'FontSize',9, 'FontName', 'Helvetica', 'Color', 'k');
-    xlabel('displacements (\mu m)', 'FontSize',9, 'FontName', 'Helvetica', 'Color', 'k');
-    hold off;
-end
-if SavePlot == 1
-    print([save_path, SampleName, '_residuals_FitType',num2str(ModelFit), '.pdf'], '-dpdf');
-    print([save_path, SampleName, '_residuals_FitType',num2str(ModelFit), '.eps'], '-depsc');
-end
-
-%PLOT CDFs of DISPLACEMENTS AND OF FIT
-figure('position',[100 100 plot_width plot_height]); %[x y width height]
-for i=1:min([12 size(JumpProbCDF,1)])
-    colour_element = colour(round(i/size(JumpProbCDF,1)*size(colour,1)),:);
-    subplot(3,4,i);
+    % PLOT THE SURVIVAL PROBABILITY OF THE FLUOROPHORE
+    figure2 = figure('position',[400 100 300 275]); %[x y width height]
     hold on;
-    plot(HistVecJumpsCDF, JumpProbCDF(i,:), '-', 'LineWidth', 2, 'Color', colour_element);
-    plot(HistVecJumpsCDF, model_CDF(i,:), 'k-', 'LineWidth', 1);
-    
-    axis([0 MaxJumpPlotCDF 0 1.05]);
-    title({SampleName; ['CDF for \Delta\tau: ', num2str(TimeGap*i), ' ms']}, 'FontSize',8, 'FontName', 'Helvetica', 'Color', 'k');
-    ylabel('displacement CDF', 'FontSize',9, 'FontName', 'Helvetica', 'Color', 'k');
-    xlabel('displacements (\mu m)', 'FontSize',9, 'FontName', 'Helvetica', 'Color', 'k');
-    legend('raw data', 'Model fit', 'Location', 'SouthEast');
-    legend boxoff
+    plot(DyeHistVec, DyeSurvivalProb, 'ko', 'MarkerSize', 6, 'MarkerFaceColor', 'r');
+    axis([1 51 0.001 1.01]);
+    title(['1-CDF of trajectory lengths; mean = ', num2str(DyeMean), ' frames'], 'FontSize',9, 'FontName', 'Helvetica');
+    ylabel('1-CDF', 'FontSize',9, 'FontName', 'Helvetica');
+    xlabel('number of frames', 'FontSize',9, 'FontName', 'Helvetica');
+    set(gca,'yscale','log');
     hold off;
-end
-if SavePlot == 1
-    print([save_path, SampleName, '_mergedCDFs_FitType',num2str(ModelFit), '.pdf'], '-dpdf');
-    print([save_path, SampleName, '_mergedCDFs_FitType',num2str(ModelFit), '.eps'], '-depsc');
-end
-
-%PLOT THE HISTOGRAM OF TRANSLOCATIONS
-figure('position',[200 200 300 400]); %[x y width height]
-histogram_spacer = 0.055;
-hold on;
-for i=size(JumpProb,1):-1:1
-    new_level = (i-1)*histogram_spacer;
-    colour_element = colour(round(i/size(JumpProb,1)*size(colour,1)),:);
-    plot(HistVecJumps, new_level*ones(1,length(HistVecJumps)), 'k-', 'LineWidth', 1); 
-    for j=2:size(JumpProb,2)
-        x1 = HistVecJumps(1,j-1); x2 = HistVecJumps(1,j);
-        y1 = new_level; y2 = JumpProb(i,j-1)+new_level;
-        patch([x1 x1 x2 x2], [y1 y2 y2 y1],colour_element);
+    
+    if SavePlot == 1
+        set(figure2,'Units','Inches');
+        pos = get(figure2,'Position');
+        set(figure2,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)]);
+        print(figure2,[save_path, SampleName, '_TrajLengthDist.pdf'],'-dpdf','-r0');
     end
-    plot(HistVecJumps, model_PDF(i,:)+new_level, 'k-', 'LineWidth', 2);
-    text(0.6*MaxJumpPlotPDF, new_level+0.5*histogram_spacer, ['\Delta\tau: ', num2str(TimeGap*i), ' ms'], 'HorizontalAlignment','left', 'FontSize',9, 'FontName', 'Helvetica');
-end
-axis([0 MaxJumpPlotPDF 0 1.05*(max(JumpProb(end,:))+(size(JumpProb,1)-1)*histogram_spacer)]);
-title(PlotTitle, 'FontSize',9, 'FontName', 'Helvetica', 'Color', 'k');
-set(gca,'YColor','w')
-ylabel('Probability', 'FontSize',9, 'FontName', 'Helvetica', 'Color', 'k');
-xlabel('jump length \mu m', 'FontSize',9, 'FontName', 'Helvetica', 'Color', 'k');
-set(gca,'YTickLabel',''); set(gca, 'YTick', []);
-hold off;
-if SavePlot == 1
-    print([save_path, SampleName, '_mergedPDFs_FitType',num2str(ModelFit), 'FitLocError', num2str(FitLocError), '.pdf'], '-dpdf');
-    print([save_path, SampleName, '_mergedPDFs_FitType',num2str(ModelFit), 'FitLocError', num2str(FitLocError),'.eps'], '-depsc');
-end 
+    
 
+
+    % PLOT THE RESIDUALS FROM THE FITTING
+    % Plot residuals for the relevant fit: 
+    %   so PDF residuals for PDF-fitting
+    %   or CDF residuals for CDF-fitting
+    figure3 = figure('position',[300 300 plot_width plot_height]); %[x y width height]
+    % find max_y for plot
+    max_y = max([0.1 max(max(abs(residuals)))]); min_y = -max_y;
+    for i=1:min([12 size(residuals,1)])
+        colour_element = colour(round(i/size(residuals,1)*size(colour,1)),:);
+        subplot(3,4,i);
+        hold on;
+        if ModelFit == 1
+            plot(HistVecJumps, residuals(i,:), '-', 'Color', colour_element, 'LineWidth', 2);
+            max_x = MaxJumpPlotPDF;
+        elseif ModelFit == 2
+            plot(HistVecJumpsCDF, residuals(i,:), '-', 'Color', colour_element, 'LineWidth', 2);
+            max_x = MaxJumpPlotCDF;
+        end
+        plot([0 max_x], [0 0], 'k--', 'LineWidth', 1);
+
+        axis([0 max_x min_y max_y]);
+        if ModelFit == 1
+            title({SampleName; ['PDF residuals for \Delta\tau: ', num2str(TimeGap*i), ' ms']}, 'FontSize',8, 'FontName', 'Helvetica', 'Color', 'k');
+        elseif ModelFit == 2
+            title({SampleName; ['CDF residuals for \Delta\tau: ', num2str(TimeGap*i), ' ms']}, 'FontSize',8, 'FontName', 'Helvetica', 'Color', 'k');
+        end
+        ylabel('residuals', 'FontSize',9, 'FontName', 'Helvetica', 'Color', 'k');
+        xlabel('displacements (\mu m)', 'FontSize',9, 'FontName', 'Helvetica', 'Color', 'k');
+        hold off;
+    end
+    
+    if SavePlot == 1
+        set(figure3,'Units','Inches');
+        pos = get(figure3,'Position');
+        set(figure3,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)]);
+        print(figure3,[save_path, SampleName, '_residuals_FitType',num2str(ModelFit), '.pdf'],'-dpdf','-r0');
+    end
+
+    %PLOT CDFs of DISPLACEMENTS AND OF FIT
+    figure4 = figure('position',[100 100 plot_width plot_height]); %[x y width height]
+    for i=1:min([12 size(JumpProbCDF,1)])
+        colour_element = colour(round(i/size(JumpProbCDF,1)*size(colour,1)),:);
+        subplot(3,4,i);
+        hold on;
+        plot(HistVecJumpsCDF, JumpProbCDF(i,:), '-', 'LineWidth', 2, 'Color', colour_element);
+        plot(HistVecJumpsCDF, model_CDF(i,:), 'k-', 'LineWidth', 1);
+
+        axis([0 MaxJumpPlotCDF 0 1.05]);
+        title({SampleName; ['CDF for \Delta\tau: ', num2str(TimeGap*i), ' ms']}, 'FontSize',8, 'FontName', 'Helvetica', 'Color', 'k');
+        ylabel('displacement CDF', 'FontSize',9, 'FontName', 'Helvetica', 'Color', 'k');
+        xlabel('displacements (\mu m)', 'FontSize',9, 'FontName', 'Helvetica', 'Color', 'k');
+        legend('raw data', 'Model fit', 'Location', 'SouthEast');
+        legend boxoff
+        hold off;
+    end
+    if SavePlot == 1
+        set(figure4,'Units','Inches');
+        pos = get(figure4,'Position');
+        set(figure4,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)]);
+        print(figure4,[save_path, SampleName, '_mergedCDFs_FitType',num2str(ModelFit), '.pdf'],'-dpdf','-r0');
+    end
+
+    %PLOT THE HISTOGRAM OF TRANSLOCATIONS
+    figure5 = figure('position',[200 200 300 400]); %[x y width height]
+    histogram_spacer = 0.055;
+    hold on;
+    for i=size(JumpProb,1):-1:1
+        new_level = (i-1)*histogram_spacer;
+        colour_element = colour(round(i/size(JumpProb,1)*size(colour,1)),:);
+        plot(HistVecJumps, new_level*ones(1,length(HistVecJumps)), 'k-', 'LineWidth', 1); 
+        for j=2:size(JumpProb,2)
+            x1 = HistVecJumps(1,j-1); x2 = HistVecJumps(1,j);
+            y1 = new_level; y2 = JumpProb(i,j-1)+new_level;
+            patch([x1 x1 x2 x2], [y1 y2 y2 y1],colour_element);
+        end
+        plot(HistVecJumps, model_PDF(i,:)+new_level, 'k-', 'LineWidth', 2);
+        text(0.6*MaxJumpPlotPDF, new_level+0.5*histogram_spacer, ['\Delta\tau: ', num2str(TimeGap*i), ' ms'], 'HorizontalAlignment','left', 'FontSize',9, 'FontName', 'Helvetica');
+    end
+    axis([0 MaxJumpPlotPDF 0 1.05*(max(JumpProb(end,:))+(size(JumpProb,1)-1)*histogram_spacer)]);
+    title(PlotTitle, 'FontSize',9, 'FontName', 'Helvetica', 'Color', 'k');
+    set(gca,'YColor','w')
+    ylabel('Probability', 'FontSize',9, 'FontName', 'Helvetica', 'Color', 'k');
+    xlabel('jump length \mu m', 'FontSize',9, 'FontName', 'Helvetica', 'Color', 'k');
+    set(gca,'YTickLabel',''); set(gca, 'YTick', []);
+    hold off;
+    if SavePlot == 1
+        set(figure5,'Units','Inches');
+        pos = get(figure5,'Position');
+        set(figure5,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)]);
+        print(figure5,[save_path, SampleName, '_mergedPDFs_FitType',num2str(ModelFit), 'FitLocError', num2str(FitLocError), '.pdf'],'-dpdf','-r0');
+    end 
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
 

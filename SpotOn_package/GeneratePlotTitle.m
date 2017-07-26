@@ -2,7 +2,7 @@ function [ PlotTitle ] = GeneratePlotTitle(SampleName, NumberOfStates, model_par
 %GeneratePlotTitle makes a title for a plot
 %   makes titles for both single-cell and merged datasets
 
-global FitLocError ModelFit
+global FitLocError ModelFit UseWeights
 
 % main title
 main_name = SampleName;
@@ -34,9 +34,16 @@ elseif ModelFit == 2
     fit_type = 'CDF';
 end
 
+% were weights used?
+if UseWeights == 1
+    weights_string = 'Fit weighted';
+else
+    weights_string = 'Fit unweighted';
+end
+
 % overview of number of localizations etc. 
 localizations_overview_name = {['Total trajs: ', num2str(TrajNumb), '; trajs >=3: ', num2str(Min3Traj), '; FitType: ', fit_type];...
- ['Locs = ', num2str(CellLocs), '; Locs/Frame = ', num2str(round(CellLocs/CellFrames*1000)/1000)]; ...
+ ['Locs = ', num2str(CellLocs), '; Locs/Frame = ', num2str(round(CellLocs/CellFrames*1000)/1000), '; ', weights_string]; ...
 ['Total 1\Delta\tau jumps = ', num2str(CellJumps), '; Jumps used = ', num2str(CellJumps_used)]};
 
 % now merge all the titles:

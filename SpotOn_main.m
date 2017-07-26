@@ -40,7 +40,8 @@ JumpsToConsider = 4; % If UseAllTraj=0, the first JumpsToConsiders displacements
 MaxJumpPlotPDF = 1.05; % the cut-off for displaying the displacement histograms plots
 MaxJumpPlotCDF = 3.05; % the cut-off for displaying the displacement CDF plots
 MaxJump = 5.05; % the overall maximal displacements to consider in micrometers
-SavePlot = 0; % if SavePlot=1, key output plots will be saved to the folder "SavedPlots"; Otherwise set SavePlot = 0;
+SavePlot = 1; % if SavePlot=1, key output plots will be saved to the folder "SavedPlots"; Otherwise set SavePlot = 0;
+DoPlots = 1; % if DoPlots=1, Spot-On will output plots, but not if it's zero. Avoiding plots speeds up Spot-On for batch analysis
 
 %%%%% Model Fitting Parameters:
 ModelFit = 2; %Use 1 for PDF-fitting; Use 2 for CDF-fitting
@@ -50,6 +51,7 @@ FitIterations = 2; % Input the desired number of fitting iterations (random init
 FitLocError = 1; % If FitLocError=1, the localization error will fitted from the data
 FitLocErrorRange = [0.010 0.075]; % min/max for model-fitted localization error in micrometers.
 LocError = 0.035; % If FitLocError=0, LocError in units of micrometers will be used. 
+UseWeights = 0; % If UseWeights=0, all TimePoints are given equal weights. If UseWeights=1, TimePoints are weighted according to how much data there is. E.g. 1dT will be weighted more than 5dT.
 D_Free_2State = [0.5 25]; % min/max Diffusion constant for Free state in 2-state model (units um^2/s)
 D_Bound_2State = [0.0001 0.08]; % min/max Diffusion constant for Bound state in 2-state model (units um^2/s)
 D_Free1_3State = [0.5 25]; % min/max Diffusion constant #1 for Free state in 3-state model (units um^2/s)
@@ -74,14 +76,13 @@ elseif DataSet == 2 % Example DataSet 2: two replicates of Halo-hCTCF at 134 Hz
     data_struct(2).workspaces = {'U2OS_C32_Halo-CTCF_PA-JF646_1ms-633nm_134Hz_rep3_cell01', 'U2OS_C32_Halo-CTCF_PA-JF646_1ms-633nm_134Hz_rep3_cell02', 'U2OS_C32_Halo-CTCF_PA-JF646_1ms-633nm_134Hz_rep3_cell03', 'U2OS_C32_Halo-CTCF_PA-JF646_1ms-633nm_134Hz_rep3_cell04', 'U2OS_C32_Halo-CTCF_PA-JF646_1ms-633nm_134Hz_rep3_cell05'};
     data_struct(2).Include = [1,2,3,4,5];
     % name of merged dataset
-    SampleName = 'U2OS C32 Halo-hCTCF; PA-JF646; ~134 Hz; two replicates';
-    
+    SampleName = 'U2OS C32 Halo-hCTCF; PA-JF646; ~134 Hz; two replicates';   
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%% SpotOn core mechanics %%%%%%%%%%%%%%%%%%%%%%%%%%%
 Params = struct(); % Use Params to feed all the relevant data/parameters into the relevant functions
-Params.TimeGap = TimeGap; Params.dZ = dZ; Params.GapsAllowed = GapsAllowed; Params.TimePoints = TimePoints; Params.BinWidth = BinWidth; Params.UseAllTraj = UseAllTraj;
+Params.TimeGap = TimeGap; Params.dZ = dZ; Params.GapsAllowed = GapsAllowed; Params.TimePoints = TimePoints; Params.BinWidth = BinWidth; Params.UseAllTraj = UseAllTraj; Params.DoPlots = DoPlots; Params.UseWeights = UseWeights;
 Params.JumpsToConsider = JumpsToConsider; Params.MaxJumpPlotPDF = MaxJumpPlotPDF; Params.MaxJumpPlotCDF = MaxJumpPlotCDF; Params.MaxJump = MaxJump; Params.SavePlot = SavePlot; Params.ModelFit = ModelFit;
 Params.DoSingleCellFit = DoSingleCellFit; Params.FitIterations = FitIterations; Params.FitLocError = FitLocError; Params.FitLocErrorRange = FitLocErrorRange; Params.LocError = LocError; Params.NumberOfStates = NumberOfStates;
 Params.D_Free_2State = D_Free_2State; Params.D_Bound_2State = D_Bound_2State; Params.D_Free1_3State = D_Free1_3State; Params.D_Free2_3State = D_Free2_3State; Params.D_Bound_3State = D_Bound_3State;

@@ -4,7 +4,7 @@ function [best_vals, residuals, list_of_model_parameters] = ModelFitting_main(Ju
 %   functions
 
 % Define global variables
-global LocError dT HistVecJumps dZ HistVecJumpsCDF ModelFit FitLocError Z_corr_a Z_corr_b
+global LocError dT HistVecJumps dZ HistVecJumpsCDF ModelFit FitLocError Z_corr_a Z_corr_b JumpsPerdT UseWeights
 
 % min/max in each state:
 FractionInState = [0 1]; % has to be between 0 and 100%.
@@ -67,6 +67,15 @@ if ModelFit == 1
 elseif ModelFit == 2
     FitJumpProb = JumpProbCDF;    
 end
+
+if UseWeights == 1
+    % Perform weighting: at increasing dT, there is less data, so weigh
+    % FitJumpProb based on the amount of data available:
+    for iter = 1:size(FitJumpProb,1)
+        FitJumpProb(iter,:) = FitJumpProb(iter,:).*JumpsPerdT(iter);
+    end
+end
+
 %   If you do 3-state fitting, add extra penalty function to ensure that:
 %       F_bound + F_Free1 < 1
 %   but this is only neccesary for 3-state fitting;
@@ -79,54 +88,56 @@ end
 
 %%%%%%%%%%%%%%%%% NON-LINEAR LEAST SQUARED FITTING PROCEDURE %%%%%%%%%%%%%%
 for iter=1:FitIterations
-        %Guess a random set of parameters
-        parameter_guess =rand(1,length(LB)).*diff_bounds+LB; 
-        
-        % if you do 3-state fitting, need to make sure that the sum of Frac_Bound 
-        % and Frac_Free1 does not exceed 1 initially:
-        if NumberOfStates == 3
-            % check sum of the fractions:
-            FracSum = parameter_guess(4) + parameter_guess(5);
-            if FracSum > 1
-                while FracSum > 1 % keep generating random numbers until they are less than 1
-                    parameter_guess(4) = rand();
-                    parameter_guess(5) = rand();
-                    FracSum = parameter_guess(4) + parameter_guess(5);
-                end
+    %Guess a random set of parameters
+    parameter_guess =rand(1,length(LB)).*diff_bounds+LB; 
+
+    % if you do 3-state fitting, need to make sure that the sum of Frac_Bound 
+    % and Frac_Free1 does not exceed 1 initially:
+    if NumberOfStates == 3
+        % check sum of the fractions:
+        FracSum = parameter_guess(4) + parameter_guess(5);
+        if FracSum > 1
+            while FracSum > 1 % keep generating random numbers until they are less than 1
+                parameter_guess(4) = rand();
+                parameter_guess(5) = rand();
+                FracSum = parameter_guess(4) + parameter_guess(5);
             end
-        end
-            
-            
-        % Perform actual Least-Squares fitting
-        if NumberOfStates == 2 && FitLocError == 0 % 2-state model, fixed Loc Error
-            [values, ssq2, residuals] = lsqcurvefit('Model_2State', parameter_guess, ModelHistVecJumps, FitJumpProb, LB, UB, options);
-
-        elseif NumberOfStates == 2 && FitLocError == 1 % 2-state model, Loc Error from fitting
-            [values, ssq2, residuals] = lsqcurvefit('Model_2State_fitLocError', parameter_guess, ModelHistVecJumps, FitJumpProb, LB, UB, options);
-
-        elseif NumberOfStates == 3 && FitLocError == 0 % 3-state model, fixed Loc Error
-            [values, ssq2, residuals] = lsqcurvefit('Model_3State', parameter_guess, ModelHistVecJumps, FitJumpProb, LB, UB, options);
-
-        elseif NumberOfStates == 3 && FitLocError == 1 % 3-state model, Loc Error from fitting
-            [values, ssq2, residuals] = lsqcurvefit('Model_3State_fitLocError', parameter_guess, ModelHistVecJumps, FitJumpProb, LB, UB, options);
-        end
-
-        % See if the current fit is an improvement:
-        if ssq2 < best_ssq2
-            best_vals = values; 
-            best_ssq2 = ssq2;
-            %OUTPUT THE NEW BEST VALUES TO THE SCREEN
-            disp('==================================================');
-            disp(['Improved fit on iteration ', num2str(iter)]);
-            disp(['Improved error is ', num2str(ssq2)]);
-            for k = 1:length(best_vals)
-                disp([char(list_of_model_parameters{k}), ' = ', num2str(best_vals(k))]);
-            end
-            disp('==================================================');
-        else
-            disp(['Iteration ', num2str(iter), ' did not yield an improved fit']);
         end
     end
+
+
+    % Perform actual Least-Squares fitting
+    if NumberOfStates == 2 && FitLocError == 0 % 2-state model, fixed Loc Error
+        [values, ssq2, residuals] = lsqcurvefit('Model_2State', parameter_guess, ModelHistVecJumps, FitJumpProb, LB, UB, options);
+
+    elseif NumberOfStates == 2 && FitLocError == 1 % 2-state model, Loc Error from fitting
+        [values, ssq2, residuals] = lsqcurvefit('Model_2State_fitLocError', parameter_guess, ModelHistVecJumps, FitJumpProb, LB, UB, options);
+
+    elseif NumberOfStates == 3 && FitLocError == 0 % 3-state model, fixed Loc Error
+        [values, ssq2, residuals] = lsqcurvefit('Model_3State', parameter_guess, ModelHistVecJumps, FitJumpProb, LB, UB, options);
+
+    elseif NumberOfStates == 3 && FitLocError == 1 % 3-state model, Loc Error from fitting
+        [values, ssq2, residuals] = lsqcurvefit('Model_3State_fitLocError', parameter_guess, ModelHistVecJumps, FitJumpProb, LB, UB, options);
+    end
+
+    % See if the current fit is an improvement:
+    if ssq2 < best_ssq2
+        best_vals = values; 
+        best_ssq2 = ssq2;
+        %OUTPUT THE NEW BEST VALUES TO THE SCREEN
+        disp('==================================================');
+        disp(['Improved fit on iteration ', num2str(iter)]);
+        disp(['Improved error is ', num2str(ssq2)]);
+        for k = 1:length(best_vals)
+            disp([char(list_of_model_parameters{k}), ' = ', num2str(best_vals(k))]);
+        end
+        disp('==================================================');
+    else
+        disp(['Iteration ', num2str(iter), ' did not yield an improved fit']);
+    end
+end
+
+% end function
 end
 
 

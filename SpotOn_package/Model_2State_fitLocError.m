@@ -1,6 +1,6 @@
 function Binned_y = Model_2State_fitLocError(parameter_guess, JumpProb)
 %Model_2State_fitLocError 2-state model, fitted localization error
-global dT HistVecJumps dZ HistVecJumpsCDF ModelFit Z_corr_a Z_corr_b
+global dT HistVecJumps dZ HistVecJumpsCDF ModelFit Z_corr_a Z_corr_b JumpsPerdT UseWeights
 
 % define key parameters
 r = HistVecJumpsCDF;
@@ -59,7 +59,14 @@ if ModelFit == 1
     %So no need to calculate the CDF
     Binned_y = Binned_y_PDF;
 
-
+    % Perform weighting: at increasing dT, there is less data, so weigh
+    % Binned_y based on the amount of data available:
+    if UseWeights == 1
+        for iter = 1:size(Binned_y,1)
+            Binned_y(iter,:) = Binned_y(iter,:).*JumpsPerdT(iter);
+        end
+    end
+    
 elseif ModelFit == 2
     %You want to fit to a CDF function
     %So first we must calculate the CDF from the finely binned PDF
@@ -78,4 +85,12 @@ elseif ModelFit == 2
 
     %Output the final variable
     Binned_y = Binned_y_CDF;
+    
+    % Perform weighting: at increasing dT, there is less data, so weigh
+    % Binned_y based on the amount of data available:
+    if UseWeights == 1
+        for iter = 1:size(Binned_y,1)
+            Binned_y(iter,:) = Binned_y(iter,:).*JumpsPerdT(iter);
+        end
+    end
 end
