@@ -1,6 +1,6 @@
 %   SpotOn_main.m
 %   Copyright (C) 2017 Anders Sejr Hansen & Maxime Woringer
-clear; clc; clearvars -global; close all;
+clear; clc; clearvars -global; close all; 
 
 %%%%%%%%%%%%%%%%%%%%%%%% GNU LICENSE OVERVIEW %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % This program is free software: you can redistribute it and/or modify it
