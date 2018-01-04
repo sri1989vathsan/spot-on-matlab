@@ -22,10 +22,10 @@ fitting.
 
 Please acknowledge Spot-On in your publications:
 
-    Spot-On: robust model-based analysis of single-particle tracking experiments
+    Robust model-based analysis of single-particle tracking experiments with Spot-On
 
     Anders S Hansen*, Maxime Woringer*, Jonathan B Grimm, Luke D Lavis, Robert Tjian, Xavier Darzacq
-    bioRxiv preprint, Aug. 2017. doi:10.1101/171983.
+    eLife 7, e33125. doi: 10.7554/eLife.33125
 	
     *These authors contributed equally and are alphabetically listed.
 
