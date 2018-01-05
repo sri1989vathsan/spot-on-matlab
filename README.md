@@ -25,7 +25,7 @@ Please acknowledge Spot-On in your publications:
     Robust model-based analysis of single-particle tracking experiments with Spot-On
 
     Anders S Hansen*, Maxime Woringer*, Jonathan B Grimm, Luke D Lavis, Robert Tjian, Xavier Darzacq
-    eLife 7, e33125. doi: 10.7554/eLife.33125
+    eLife, 2018, 7, e33125. doi: 10.7554/eLife.33125
 	
     *These authors contributed equally and are alphabetically listed.
 
