@@ -28,14 +28,14 @@ DataSet = 1;    % Use DataSet=1 for an example of how to process data for multip
 data_struct = struct([]);
 
 %%%%% Acquisition Parameters: 
-TimeGap = 8; % delay between frames in milliseconds
-dZ = 0.700; % The axial observation slice in micrometers; Rougly 0.7 um for the example data (HiLo)
+TimeGap = 7.75; % delay between frames in milliseconds
+dZ = 0.500; % The axial observation slice in micrometers; Rougly 0.7 um for the example data (HiLo)
 GapsAllowed = 1; % The number of allowed gaps in the tracking
 
 %%%%% Data Processing Parameters:
-TimePoints = 8; % How many delays to consider: N timepoints yield N-1 delays
+TimePoints = 10; % How many delays to consider: N timepoints yield N-1 delays
 BinWidth = 0.010; % Bin Width for computing histogram in micrometers (only for PDF; Spot-On uses 1 nm bins for CDF)
-UseAllTraj = 0; % If UseAllTraj=1, all data from all trajectories will be used; If UseAllTraj=0, only the first X displacements will be used
+UseAllTraj = 1; % If UseAllTraj=1, all data from all trajectories will be used; If UseAllTraj=0, only the first X displacements will be used
 JumpsToConsider = 4; % If UseAllTraj=0, the first JumpsToConsiders displacements for each dT where possible will be used. 
 MaxJumpPlotPDF = 1.05; % the cut-off for displaying the displacement histograms plots
 MaxJumpPlotCDF = 3.05; % the cut-off for displaying the displacement CDF plots
@@ -47,23 +47,27 @@ DoPlots = 1; % if DoPlots=1, Spot-On will output plots, but not if it's zero. Av
 ModelFit = 1; %Use 1 for PDF-fitting; Use 2 for CDF-fitting
 DoSingleCellFit = 1; %Set to 1 if you want to analyse all single cells individually (slow). 
 NumberOfStates = 3; % If NumberOfStates=2, a 2-state model will be used; If NumberOfStates=3, a 3-state model will be used 
-FitIterations = 2; % Input the desired number of fitting iterations (random initial parameter guess for each)
+FitIterations = 6; % Input the desired number of fitting iterations (random initial parameter guess for each)
 FitLocError = 0; % If FitLocError=1, the localization error will fitted from the data
 FitLocErrorRange = [0.010 0.075]; % min/max for model-fitted localization error in micrometers.
 LocError = 0.035; % If FitLocError=0, LocError in units of micrometers will be used. 
 UseWeights = 0; % If UseWeights=0, all TimePoints are given equal weights. If UseWeights=1, TimePoints are weighted according to how much data there is. E.g. 1dT will be weighted more than 5dT.
-D_Free_2State = [0.5 25]; % min/max Diffusion constant for Free state in 2-state model (units um^2/s)
+D_Free_2State = [0.1 25]; % min/max Diffusion constant for Free state in 2-state model (units um^2/s)
 D_Bound_2State = [0.0001 0.08]; % min/max Diffusion constant for Bound state in 2-state model (units um^2/s)
-D_Free1_3State = [0.5 25]; % min/max Diffusion constant #1 for Free state in 3-state model (units um^2/s)
-D_Free2_3State = [0.5 25]; % min/max Diffusion constant #2 for Free state in 3-state model (units um^2/s)
+D_Free1_3State = [0.1 25]; % min/max Diffusion constant #1 for Free state in 3-state model (units um^2/s)
+D_Free2_3State = [1 25]; % min/max Diffusion constant #2 for Free state in 3-state model (units um^2/s)
 D_Bound_3State = [0.0001 0.08]; % min/max Diffusion constant for Bound state in 3-state model (units um^2/s)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Filelist = dir('*.mat');
 
 %%%%%%%%%%%%%%%%%%%%%%% DEFINE DATA SET PARAMETERS %%%%%%%%%%%%%%%%%%%%%%%%
 data_struct(1).path = [pwd, filesep];
-data_struct(1).workspaces = {'eIF4A1_1','eIF4A1_2'};
-data_struct(1).Include = [1,2];
-SampleName = 'U2OS; rep1';
+data_struct(1).workspaces = {};
+for ilk = 1:length(Filelist)
+    data_struct(1).workspaces(ilk) = {Filelist(ilk).name(1:end-4)};
+end
+data_struct(1).Include = linspace(1,length(Filelist),length(Filelist));
+SampleName = Filelist(1).name(1:end-4);
 
 % if DataSet == 1 % Example DataSet 1: a single replicate of Halo-hCTCF at 134 Hz
 %     data_struct(1).path = [pwd, filesep, 'Data', filesep, 'CTCF_134Hz_rep1', filesep];
